@@ -22,6 +22,7 @@ export default function useProducts(): UseProductsResult {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<unknown>(null);
   const [page, setPage] = useState(1);
+  const MAX_LENGTH = products.length;
 
   const getProducts = async () => {
     try {
@@ -39,6 +40,7 @@ export default function useProducts(): UseProductsResult {
   }, [page]);
 
   const fetchNextPage = () => {
+    if (page >= MAX_LENGTH) return;
     setPage((prevPage) => prevPage + 1);
   };
 
