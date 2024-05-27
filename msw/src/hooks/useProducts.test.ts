@@ -1,10 +1,9 @@
-import { renderHook, waitFor } from "@testing-library/react";
+import { renderHook, waitFor, act } from "@testing-library/react";
 import useProducts from "./useProducts";
 
 import { HttpResponse, http } from "msw";
 import { PRODUCTS_ENDPOINT } from "../api/endpoints";
 import { server } from "../mocks/server";
-import { act } from "react";
 
 describe("useProducts", () => {
   describe("상품 목록 조회", () => {
@@ -47,7 +46,7 @@ describe("useProducts", () => {
         expect(result.current.page).toBe(1);
       });
     });
-    it.only("다음 페이지의 상품 4개를 추가로 불러온다", async () => {
+    it("다음 페이지의 상품 4개를 추가로 불러온다", async () => {
       const { result } = renderHook(() => useProducts());
 
       await waitFor(() => {
@@ -62,6 +61,36 @@ describe("useProducts", () => {
       await waitFor(() => {
         expect(result.current.products).toHaveLength(24);
         expect(result.current.page).toBe(2);
+      });
+    });
+    it("모든 페이지의 상품을 불러오면 더 이상 요청하지 않는다.", async () => {
+      const { result } = renderHook(() => useProducts());
+
+      await waitFor(() => {
+        expect(result.current.products).toHaveLength(20);
+      });
+
+      for (let i = 2; i < 22; i++) {
+        await waitFor(() => {
+          act(() => {
+            result.current.fetchNextPage();
+          });
+        });
+
+        const expectedLength = 20 + (i - 1) * 4;
+
+        await waitFor(() => {
+          expect(result.current.products).toHaveLength(expectedLength);
+          expect(result.current.page).toBe(i);
+        });
+      }
+      await act(async () => {
+        result.current.fetchNextPage();
+      });
+
+      await waitFor(() => {
+        expect(result.current.products).toHaveLength(100);
+        expect(result.current.page).toBe(22);
       });
     });
   });
